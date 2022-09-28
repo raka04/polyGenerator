@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <style>
+        #divIV {
+            background-color: aqua;
+        }
+        #divIC {
+            background-color: aliceblue;
+        }
+        #divPolygon {
+            background-color: wheat;
+        }
+        #divProcessPolygon {
+            background-color: ivory;
+        }
+    </style>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Computational Geometry Problem Solving</title>
+    <script src="geomCalc.js" defer></script>
+</head>
+<body>
+    <div id="divImport">
+        <h1>Import File</h1>
+        <input type="button" name="cleardata" value="Clear Data:->" onclick="clearData()"><br><br>
+        <input type="button" name="testdata" value="Load Test Data:->" onclick="loadTestData()"><br><br>
+        <label for="myfile">Select a file:</label>
+        <input type="file" id="jfile" name="jfile" accept=".json"><br><br>
+        <input type="button" name="loaddata" value="Add Data:->" onclick="addNewData()"><br><hr>
+    </div>
+    <div id="divIV">
+        <h1>Input Vertices</h1>
+        <form method="POST" name="vertices">
+            <br>
+                X: <input type="number" step="0.01" name="coordx">
+                Y: <input type="number" step="0.01" name="coordy">
+            <br><br>
+            <input type="button" name="vertex" value="Add Vertex:->" onclick="addVertex(0,0,false)"><hr>
+            <table id="vtable" class="table" border="1">
+                <thead>
+                    <th>X-coordinate</th>
+                    <th>Y-coordinate</th>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </form> 
+    </div>
+    <div id="divIC">
+        <h1>Input Connectivity</h1>
+        <form method="POST" name="edge">
+            <br>
+                Index-I: <input type="number" step="1" min="0" name="endi">
+                Index-J: <input type="number" step="1" min="0" name="endj">
+            <br><br>
+            <input type="button" name="edge" value="Add Edge:->" onclick="addEdge(0,0,false)"><hr>
+            <table id="edtable" class="table" border="1">
+                <thead>
+                    <th>Index-I</th>
+                    <th>Index-J</th>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </form> 
+    </div>
+    <div id="divPolygon">
+        <h1>View</h1>
+        <input type="button" name="edges" value="View Edges:->" onclick="viewEdges()"><br><br>
+        <input type="button" name="polys" value="View Polygons:->" onclick="viewPolygons()"><br><hr>
+        <canvas id="polyCanvas" width="2000" height="2000"></canvas>
+    </div>
+    <div id="divProcessPolygon">
+        <h1>Process Polygons</h1>
+        <form method="POST" name="neighborPoly">
+            <br>
+                Find-neighbor-of-a-polygon: <input type="number" step="1" min="0" name="polyIndex">
+            <br><br>
+            <input type="button" name="findNeighborPolys" value="Find polys:->" onclick="findNeighborPolygons()"><br><hr>
+        
+            <br>
+                Check-point-in-polygon:<br>
+                X: <input type="number" step="0.01" name="coordx">
+                Y: <input type="number" step="0.01" name="coordy">
+            <br><br>
+            <input type="button" name="checkPointInPoly" value="Find polys:->" onclick="findPointInWhichPolygons()"><br><hr>
+        
+        </form>
+        <canvas id="processPolyCanvas" width="2000" height="2000"></canvas>
+    </div>
+    <script type="text/javascript">
+
+        function clearData(){
+            glPoints.splice(0, glPoints.length);
+            glEdges.splice(0, glEdges.length);
+            glPolys = [];
+            glEdgesMap.clear();
+
+            var myVTable = document.getElementById("vtable");
+            var rowCount = myVTable.rows.length;
+            for (var i = 1; i < rowCount; i++) {
+                myVTable.deleteRow(1);
+            }
+            var myEdgeTable = document.getElementById("edtable");
+            var rowCount = myEdgeTable.rows.length;
+            for (var i = 1; i < rowCount; i++) {
+                myEdgeTable.deleteRow(1);
+            }
+
+            //clear canvases
+            var canvas = document.getElementById("polyCanvas");
+            var ctxt = canvas.getContext("2d");
+            ctxt.clearRect(0, 0, canvas.width, canvas.height);
+            
+            var canvas = document.getElementById("processPolyCanvas");
+            var ctxt = canvas.getContext("2d");
+            ctxt.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function addNewData(){
+            clearData();
+
+            let file = document.getElementById("jfile").files[0];
+            fr = new FileReader();
+            fr.readAsText(file);
+            
+            fr.onload = function(e) {
+                var result = JSON.parse(fr.result); // Parse the result into an object 
+
+                for(var i = 0; i < result.vertices.length; i++)
+                    addVertex(result.vertices[i][0], result.vertices[i][1]);
+                for(var i = 0; i < result.edges.length; i++)
+                    addEdge(result.edges[i][0], result.edges[i][1]);
+            };
+        }
+
+        function loadTestData(){
+            clearData();
+
+            //add vertices
+            addVertex(0,0);
+            addVertex(2,0);
+            addVertex(2,2);
+            addVertex(0,2);
+            addVertex(0,4);
+            addVertex(-4,2);
+            addVertex(-4,0);
+            addVertex(-4,4);
+            addVertex(4,0);
+            addVertex(4,4);
+            addVertex(2,4);
+            addVertex(6,0);
+            addVertex(6,4);
+            addVertex(6,2);
+            addVertex(5,2);
+            addVertex(2,-2);
+
+            //add edges
+            addEdge(0,1);
+            addEdge(1,2);
+            addEdge(0,2);
+            addEdge(0,3);
+            addEdge(2,3);
+            addEdge(2,4);
+            addEdge(3,4);
+            addEdge(3,5);
+            addEdge(4,5);
+            addEdge(5,6);
+            addEdge(0,6);
+            addEdge(4,7);
+            addEdge(5,7);
+            addEdge(1,8);
+            addEdge(2,8);
+            addEdge(2,10);
+            addEdge(9,8);
+            addEdge(10,9);
+            addEdge(8,11);
+            addEdge(9,12);
+            addEdge(11,14);
+            addEdge(13,14);
+            addEdge(12,13);
+            addEdge(0,15);
+            addEdge(1,15);
+            addEdge(12,14);
+        }
+
+        function getLimitDiffs(){
+
+            var xmin = 10000000, ymin = 10000000, xmax = -10000000, ymax = -10000000;
+
+            for(i = 0; i < glPoints.length; i++){
+                if(xmin > glPoints[i].x)
+                    xmin = glPoints[i].x;
+                if(ymin > glPoints[i].y)
+                    ymin = glPoints[i].y;
+                if(xmax < glPoints[i].x)
+                    xmax = glPoints[i].x;
+                if(ymax < glPoints[i].y)
+                    ymax = glPoints[i].y;
+            }
+
+            return [Math.abs(xmax-xmin), Math.abs(ymax-ymin)];
+
+        }
+
+        function viewEdges(){
+            
+            var canvas = document.getElementById("polyCanvas");
+            var ctxt = canvas.getContext("2d");
+            ctxt.clearRect(0, 0, canvas.width, canvas.height);
+
+            if(!glEdges.length)
+                return;
+
+            var limitDiffs = getLimitDiffs(); 
+
+            if(limitDiffs[0] < 1e-3 || limitDiffs[0] < 1e-3)
+                return;
+
+            var sfx = 0.5 * canvas.clientWidth/limitDiffs[0];
+            var sfy = 0.5 * canvas.clientHeight/limitDiffs[1];
+
+            ctxt.beginPath();
+            var index_i = 0;
+            var index_j = 0;
+
+            for(var i = 0; i < glEdges.length; i++){
+                index_i = glEdges[i].i;
+                index_j = glEdges[i].j;
+
+                ctxt.moveTo(glPoints[index_i].x * sfx + canvas.clientWidth /2 , -glPoints[index_i].y * sfy + canvas.clientHeight / 2);
+                ctxt.lineTo(glPoints[index_j].x * sfx + canvas.clientWidth /2,  -glPoints[index_j].y * sfy + canvas.clientHeight / 2);
+                ctxt.stroke();
+            }
+            ctxt.closePath();
+        }
+
+        function findPointInWhichPolygons(){
+            var canvas = document.getElementById("processPolyCanvas");
+            var ctxt = canvas.getContext("2d");
+            ctxt.clearRect(0, 0, canvas.width, canvas.height);
+            ctxt.font = "40px serif";
+
+            //clear global polys
+            glPolys = []
+            //init edges sides
+            for(var i = 0; i < glEdges.length; i++){
+                glEdges[i].initSides();
+            }
+            //create vertex graph
+            var vg = new Graph(glPoints, glEdges, glEdgesMap);
+
+            //calculate polygons
+            vg.calculatePolygons();
+
+            //no polygons calculated
+            if(!glPolys.length)
+                return;
+
+            //get limits for canvas drawings
+            var limitDiffs = getLimitDiffs(); 
+
+            if(limitDiffs[0] < 1e-3 || limitDiffs[0] < 1e-3)
+                return;
+
+            //scale factor for canvas drawing
+            var sfx = 0.5 * canvas.clientWidth/limitDiffs[0];
+            var sfy = 0.5 * canvas.clientHeight/limitDiffs[1];
+
+            var index_i = 0;
+            var index_j = 0;
+            var x, y, centroidx, centroidy;
+
+            //loop over calculated polygons and draw them
+            for(var i = 0; i < glPolys.length; i++){
+                var poly = glPolys[i];
+                if(poly.exterior)
+                    continue;
+                var len = glPolys[i].length();
+                centroidx = 0; centroidy = 0;
+
+                if(!len)
+                    continue;
+
+                var index_i = glPolys[i].vertexIndexAt(0);
+
+                var cr = 'rgb('+
+                                Math.floor(Math.random()*256)+','+
+                                Math.floor(Math.random()*256)+','+
+                                Math.floor(Math.random()*256)+','+0.35+')';
+                ctxt.fillStyle = cr;
+                ctxt.beginPath();
+                x = glPoints[index_i].x * sfx + canvas.clientWidth / 2;
+                y = -glPoints[index_i].y * sfy + canvas.clientHeight / 2;
+                ctxt.moveTo(x,y);
+                for(var j = 1; j < len; j++){
+                    index_i = glPolys[i].vertexIndexAt(j);
+                    x = glPoints[index_i].x * sfx + canvas.clientWidth / 2;
+                    y = -glPoints[index_i].y * sfy + canvas.clientHeight / 2;
+                    centroidx += x;
+                    centroidy += y;
+                    ctxt.lineTo(x,  y);
+                }
+                centroidx /= (len-1);
+                centroidy /= (len-1);
+                ctxt.closePath();
+                ctxt.fill();
+                ctxt.fillStyle = 'black';
+                ctxt.fillText(glPolys[i].id, centroidx, centroidy);
+            }
+            
+            var px = Number(document.neighborPoly.coordx.value);
+            var py = Number(document.neighborPoly.coordy.value);
+
+            var x = px * sfx + canvas.clientWidth / 2;
+            var y = -py * sfy + canvas.clientHeight / 2;
+
+            ctxt.beginPath();
+            ctxt.arc(x, y, 16, 0, 2 * Math.PI, true);
+            ctxt.fill();
+            ctxt.closePath();
+
+            for(var el = 0; el < glPolys.length; el++){
+                var poly = glPolys[el];
+                
+                if(poly.exterior)
+                    continue;
+                
+                if(glPolys[el].isInside(px,py)){
+
+                    ctxt.beginPath();
+                    ctxt.lineWidth = 10;
+
+                    var j = glPolys[el].vertexIndexAt(0);
+
+                    x = glPoints[j].x * sfx + canvas.clientWidth / 2;
+                    y = -glPoints[j].y * sfy + canvas.clientHeight / 2;
+
+                    ctxt.moveTo(x , y);
+
+                    for(var i = 1; i < glPolys[el].length(); i++){
+
+                        var j = glPolys[el].vertexIndexAt(i);
+
+                        x = glPoints[j].x * sfx + canvas.clientWidth / 2;
+                        y = -glPoints[j].y * sfy + canvas.clientHeight / 2;
+
+                        ctxt.lineTo(x,  y);
+                        ctxt.stroke();
+                    }
+
+                    ctxt.closePath();
+                }
+            }
+        }
+
+        function findNeighborPolygons(){
+            var canvas = document.getElementById("processPolyCanvas");
+            var ctxt = canvas.getContext("2d");
+            ctxt.clearRect(0, 0, canvas.width, canvas.height);
+            ctxt.font = "40px serif";
+
+            //clear global polys
+            glPolys = []
+
+            //init edges sides
+            for(var i = 0; i < glEdges.length; i++){
+                glEdges[i].initSides();
+            }
+            //create vertex graph
+            var vg = new Graph(glPoints, glEdges, glEdgesMap);
+            
+            //calculate polygons
+            vg.calculatePolygons();
+
+            //no polygons calculated
+            if(!glPolys.length)
+                return;
+
+            //get limits for canvas drawings
+            var limitDiffs = getLimitDiffs(); 
+
+            if(limitDiffs[0] < 1e-3 || limitDiffs[0] < 1e-3)
+                return;
+
+            //scale factor for canvas drawing
+            var sfx = 0.5 * canvas.clientWidth/limitDiffs[0];
+            var sfy = 0.5 * canvas.clientHeight/limitDiffs[1];
+
+            var index_i = 0;
+            var index_j = 0;
+            var x, y, centroidx, centroidy;
+
+            //loop over calculated polygons and draw them
+            for(var i = 0; i < glPolys.length; i++){
+                var poly = glPolys[i];
+                if(poly.exterior)
+                    continue;
+                var len = glPolys[i].length();
+                centroidx = 0; centroidy = 0;
+
+                if(!len)
+                    continue;
+
+                var index_i = glPolys[i].vertexIndexAt(0);
+
+                var cr = 'rgb('+
+                                Math.floor(Math.random()*256)+','+
+                                Math.floor(Math.random()*256)+','+
+                                Math.floor(Math.random()*256)+','+0.35+')';
+                ctxt.fillStyle = cr;
+                ctxt.beginPath();
+                x = glPoints[index_i].x * sfx + canvas.clientWidth / 2;
+                y = -glPoints[index_i].y * sfy + canvas.clientHeight / 2;
+                ctxt.moveTo(x,y);
+                for(var j = 1; j < len; j++){
+                    index_i = glPolys[i].vertexIndexAt(j);
+                    x = glPoints[index_i].x * sfx + canvas.clientWidth / 2;
+                    y = -glPoints[index_i].y * sfy + canvas.clientHeight / 2;
+                    centroidx += x;
+                    centroidy += y;
+                    ctxt.lineTo(x,  y);
+                }
+                centroidx /= (len-1);
+                centroidy /= (len-1);
+                ctxt.closePath();
+                ctxt.fill();
+                ctxt.fillStyle = 'black';
+                ctxt.fillText(glPolys[i].id, centroidx, centroidy);
+            }
+            
+            var polyInd = Number(document.neighborPoly.polyIndex.value);
+            if(polyInd < glPolys.length && !glPolys[polyInd].exterior){
+
+                var neighbors = glPolys[polyInd].calculateNeighborPolys();
+
+                for(const el of neighbors){
+
+                    if(glPolys[el].exterior)
+                        continue;
+
+                    ctxt.beginPath();
+                    ctxt.lineWidth = 10;
+
+                    var j = glPolys[el].vertexIndexAt(0);
+                    ctxt.moveTo(glPoints[j].x * sfx + canvas.clientWidth /2 , -glPoints[j].y * sfy + canvas.clientHeight / 2);
+
+                    for(var i = 1; i < glPolys[el].length(); i++){
+
+                        var j = glPolys[el].vertexIndexAt(i);
+                        ctxt.lineTo(glPoints[j].x * sfx + canvas.clientWidth /2,  -glPoints[j].y * sfy + canvas.clientHeight / 2);
+                        ctxt.stroke();
+                    }
+
+                    ctxt.closePath();
+                }
+            }
+        }
+
+        function viewPolygons(){
+            var canvas = document.getElementById("polyCanvas");
+            var ctxt = canvas.getContext("2d");
+            ctxt.clearRect(0, 0, canvas.width, canvas.height);
+            ctxt.font = "40px serif";
+
+            //clear global polys
+            glPolys = []
+            //init sides
+            for(var i = 0; i < glEdges.length; i++){
+                glEdges[i].initSides();
+            }
+            //create vertex graph
+            var vg = new Graph(glPoints, glEdges, glEdgesMap);
+
+            //calculate polygons
+            vg.calculatePolygons();
+
+            //no polygons calculated
+            if(!glPolys.length)
+                return;
+
+            //get limits for canvas drawings
+            var limitDiffs = getLimitDiffs(); 
+
+            if(limitDiffs[0] < 1e-3 || limitDiffs[0] < 1e-3)
+                return;
+
+            //scale factor for canvas drawing
+            var sfx = 0.5 * canvas.clientWidth/limitDiffs[0];
+            var sfy = 0.5 * canvas.clientHeight/limitDiffs[1];
+
+            var index_i = 0;
+            var index_j = 0;
+            var x, y, centroidx, centroidy;
+
+            //loop over calculated polygons and draw them
+            for(var i = 0; i < glPolys.length; i++){
+                var poly = glPolys[i];
+                if(poly.exterior)
+                    continue;
+                var len = glPolys[i].length();
+                centroidx = 0; centroidy = 0;
+
+                if(!len)
+                    continue;
+
+                var index_i = glPolys[i].vertexIndexAt(0);
+
+                var cr = 'rgb('+
+                                Math.floor(Math.random()*256)+','+
+                                Math.floor(Math.random()*256)+','+
+                                Math.floor(Math.random()*256)+','+0.35+')';
+                ctxt.fillStyle = cr;
+                ctxt.beginPath();
+                x = glPoints[index_i].x * sfx + canvas.clientWidth / 2;
+                y = -glPoints[index_i].y * sfy + canvas.clientHeight / 2;
+                ctxt.moveTo(x,y);
+                for(var j = 1; j < len; j++){
+                    index_i = glPolys[i].vertexIndexAt(j);
+                    x = glPoints[index_i].x * sfx + canvas.clientWidth / 2;
+                    y = -glPoints[index_i].y * sfy + canvas.clientHeight / 2;
+                    centroidx += x;
+                    centroidy += y;
+                    ctxt.lineTo(x,  y);
+                }
+                centroidx /= (len-1);
+                centroidy /= (len-1);
+                ctxt.closePath();
+                ctxt.fill();
+                ctxt.fillStyle = 'black';
+                ctxt.fillText(glPolys[i].id, centroidx, centroidy);
+            }
+        }
+
+        function addEdge( index_i, index_j, srcData = true ){
+
+            if(srcData == false){
+                index_i = document.edge.endi.value;
+                index_j = document.edge.endj.value;
+            }
+           
+            var tr = document.createElement('tr');
+            var td1 = tr.appendChild(document.createElement('td'));
+            var td2 = tr.appendChild(document.createElement('td'));
+
+            td1.innerHTML = index_i;
+            td2.innerHTML = index_j;
+
+            document.getElementById("edtable").appendChild(tr);
+            var e = new Edge(Number(index_i), Number(index_j));
+            glEdges.push(e);
+            glEdgesMap.set(symhash(Number(index_i), Number(index_j)), glEdges.length-1);
+        }
+
+        function addVertex( x, y, srcData = true ){
+
+            if(srcData == false){
+                x = document.vertices.coordx.value;
+                y = document.vertices.coordy.value;
+            }
+            var tr = document.createElement('tr');
+            var td1 = tr.appendChild(document.createElement('td'));
+            var td2 = tr.appendChild(document.createElement('td'));
+
+            td1.innerHTML = x;
+            td2.innerHTML = y;
+
+            document.getElementById("vtable").appendChild(tr);
+            var v = new Vertex2d(Number(x), Number(y));
+            glPoints.push(v);
+        }
+    </script>
+
+</body>
+</html>
