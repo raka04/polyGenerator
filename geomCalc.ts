@@ -72,6 +72,7 @@ class Polygon2d {
        this.xmax = this.ymax = -1e+20;
 
        // initialize bounding box limits
+       // Complexity->O(N)
        while(i < this.loop.length){
 
             j = this.loop[i];
@@ -139,6 +140,7 @@ class Polygon2d {
 
             //Randalph Franklin's point in polygon algorithm
             //https://wrfranklin.org/Research/Short_Notes/pnpoly.html
+            // Complexity->O(N)
             for(var j = 0; j < pts.length; j++){
                 if ((((glPoints[ind_i].y <= pts[j][1]) && (pts[j][1] < glPoints[ind_j].y)) || ((glPoints[ind_j].y <= pts[j][1]) && (pts[j][1] < glPoints[ind_i].y))) &&
                     (pts[j][0] < (glPoints[ind_j].x - glPoints[ind_i].x) * (pts[j][1] - glPoints[ind_i].y) / (glPoints[ind_j].y - glPoints[ind_i].y) + glPoints[ind_i].x))
@@ -156,6 +158,7 @@ class Polygon2d {
 
         var area: number = 0;
 
+        // Complexity->O(N)
         for(var i = 0; i < this.loop.length-1; i++){
             var j = this.loop[i];
             var k = this.loop[i+1];
@@ -170,6 +173,7 @@ class Polygon2d {
     calculateNeighborPolys = () : number[] => {
         var neighborset:Set<number> = new Set();
 
+        // Complexity->O(N)
         for(var i = 0; i < this.loop.length-1; i++){
             var j = this.loop[i];
             var k = this.loop[i+1];
@@ -204,15 +208,19 @@ class Graph{
     constructor(points:Array<Vertex2d>, edges:Array<Edge>, edgesMap: Map<number, number>){
         this.vGraph = new Array<Array<number>>;
         this.eGraph = new Map<string, Array<number>>;
+
+        // Complexity->O(N) 
         for(var i = 0; i < points.length; i++)
         {
             var blankVertices: Array<number> = new Array<number>;
             this.vGraph.push(blankVertices);
         }
+        // Complexity->O(N)
         for(var i = 0; i < edges.length; i++)
         {
             this.addToVertexGraph(edges[i].i, edges[i].j);
         }
+        // Complexity->O((f1*N+f2*N...+fN*N)) = (0(N * (f1+f2+f3...))) ~(O(N^2)) 
         for(var i = 0; i < edges.length; i++)
         {
             for(var k = 0; k < 2; k++){
@@ -228,11 +236,8 @@ class Graph{
                 if(edgeLeftIndex != undefined && edgeRightIndex != undefined)
                 {
                     sortedEdgesToInsert.push(edgeLeftIndex);
-
                     sortedEdgesToInsert.push(edgeRightIndex);
-
                     var key: string = index_i.toString() + "," + index_j.toString();
-
                     this.eGraph.set(key, sortedEdgesToInsert);
                 }
             }
@@ -240,8 +245,7 @@ class Graph{
     }
 
     private addToVertexGraph = (i:number, j:number) =>{
-        if(i < 0 || i >= this.vGraph.length || j < 0 || j >= this.vGraph.length)
-            throw Error("Inserting edge outside the graph range!");
+        //O(1)
         this.vGraph[i].push(j);
         this.vGraph[j].push(i);
     }
@@ -258,6 +262,7 @@ class Graph{
         var dx1: number = p2.x - p1.x;
         var dy1: number = p2.y - p1.y;
         
+        //O(N)
         for(k = 0; k < this.vGraph[j].length; k++)
         {
             var l:number = this.vGraph[j][k];
@@ -292,6 +297,7 @@ class Graph{
         var i: number, k: number, l: number;
         var id: number = 0;
 
+        // Complexity->O((f1*N+f2*N...+fN*N)) = (0(N * (f1+f2+f3...))) ~(O(N^2)) 
         for (i = 0; i < glEdges.length; i++) {
 
             //if both side polygons been found then do not continue
