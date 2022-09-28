@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
     <style>
+        #divInstructions{
+            background-color: rgb(255, 0, 128);
+        }
         #divIV {
             background-color: aqua;
         }
@@ -22,6 +25,21 @@
     <script src="geomCalc.js" defer></script>
 </head>
 <body>
+    <div id="divInstructions">
+        <h1>Instructions</h1>
+        <p>1. Use clear data button to clear all the input from display and storage.<br>
+           2. Use load test data button to load the test example.<br>
+           3. Use choose file button to load data from *.json file. Several input example files are also provided in the repository.
+              Use add data button to load the data from the input file. <br>
+           4. Alternatively, one may also use Add vertex and Add edge buttons to directly input the coordinates 
+            and connectivity. Note: the connectivity is provided with 0 based index.<br>
+           5. View Edges button to view the edges.<br>
+           6. View Polygon displays the calculated polygons.<br>
+           7. Find Polys button takes the input polygon index from output in step [6] and marks the neighboring polygons.<br>
+           8. Last, Find Polys button marks the polygon containing the input x, y point. If the point is shared by multiple
+              polygons then those are also marked.<br>
+        </p>
+    </div>
     <div id="divImport">
         <h1>Import File</h1>
         <input type="button" name="cleardata" value="Clear Data:->" onclick="clearData()"><br><br>
