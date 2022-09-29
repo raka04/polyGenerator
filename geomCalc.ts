@@ -41,7 +41,6 @@ function asymhash(i:number, j:number):number{
 
 var glPoints:Array<Vertex2d> = new Array<Vertex2d>;
 var glEdges:Array<Edge> = new Array<Edge>;
-var glEdgesMap: Map<number, number> = new Map();
 var glPolys: Polygon2d[] = [];
 
 // Polygon2d class: object of class stores loops which are vertex indices
@@ -115,43 +114,25 @@ class Polygon2d {
         else
             return false;
     }
-    isInside = (x: number, y: number, tol: number = 1e-8, radsplit: number = 8) : boolean => {
+    isInside = (x: number, y: number, tol: number = 1e-8) : boolean => {
         if(!this.isBounded(x,y,tol))
             return false;
         
         var i: number;
-        //doing a finer radial split for better heuristics
-        var c:boolean[] = [];
-        var pts:number[][] = [[]];
+        var c:boolean = false
 
-        for(i = 0; i < radsplit; i++){
-            var ang:number = 2.0 * Math.PI * i / radsplit;
-
-            var xy:number[] = [x + tol * Math.cos(ang), y + tol * Math.sin(ang)];
-            
-            pts.push(xy);
-
-            c.push(false);
-        }
-
+        //Randalph Franklin's point in polygon algorithm
+        //https://wrfranklin.org/Research/Short_Notes/pnpoly.html
+        // Complexity->O(N)
         for (i = 0; i < this.loop.length-1; i++) {
             var ind_i:number = this.loop[i];
             var ind_j:number = this.loop[i+1];
-
-            //Randalph Franklin's point in polygon algorithm
-            //https://wrfranklin.org/Research/Short_Notes/pnpoly.html
-            // Complexity->O(N)
-            for(var j = 0; j < pts.length; j++){
-                if ((((glPoints[ind_i].y <= pts[j][1]) && (pts[j][1] < glPoints[ind_j].y)) || ((glPoints[ind_j].y <= pts[j][1]) && (pts[j][1] < glPoints[ind_i].y))) &&
-                    (pts[j][0] < (glPoints[ind_j].x - glPoints[ind_i].x) * (pts[j][1] - glPoints[ind_i].y) / (glPoints[ind_j].y - glPoints[ind_i].y) + glPoints[ind_i].x))
-                    c[j] = !c[j];
-            }
+            
+            if ((((glPoints[ind_i].y <= y) && (y < glPoints[ind_j].y)) || ((glPoints[ind_j].y <= y) && (y < glPoints[ind_i].y))) &&
+                (x < (glPoints[ind_j].x - glPoints[ind_i].x) * (y - glPoints[ind_i].y) / (glPoints[ind_j].y - glPoints[ind_i].y) + glPoints[ind_i].x))
+                c = !c;
         }
-
-        for(var i = 0; i < c.length; i++)
-            if(c[i])
-                return true;
-        return false;
+        return c;
     }
 
     signedArea = () : number =>{
@@ -169,32 +150,6 @@ class Polygon2d {
 
     }
 
-    //function return indices of neighboring polygons in the glPolys array
-    calculateNeighborPolys = () : number[] => {
-        var neighborset:Set<number> = new Set();
-
-        // Complexity->O(N)
-        for(var i = 0; i < this.loop.length-1; i++){
-            var j = this.loop[i];
-            var k = this.loop[i+1];
-            
-            let edgeInd = glEdgesMap.get(symhash(j, k));
-
-            if(edgeInd == undefined)
-                throw Error("Incorrect edge index!");
-
-            var side1:number = glEdges[edgeInd].side1;
-            var side2:number = glEdges[edgeInd].side2;
-
-            if(side1>=0 && side1 != this.id)
-                neighborset.add(side1);
-            if(side2>=0 && side2 != this.id)
-                neighborset.add(side2);
-        }
-        return [...neighborset];
-
-    }
-
     log = () =>{
         console.log(this.id, this.loop);
     }
@@ -204,10 +159,12 @@ class Polygon2d {
 class Graph{
     private vGraph:Array<Array<number>>;
     private eGraph:Map<string, Array<number>>;
+    private edgeIndexMap:Map<number,number>;
 
-    constructor(points:Array<Vertex2d>, edges:Array<Edge>, edgesMap: Map<number, number>){
+    constructor(points:Array<Vertex2d>, edges:Array<Edge>){
         this.vGraph = new Array<Array<number>>;
         this.eGraph = new Map<string, Array<number>>;
+        this.edgeIndexMap = new Map<number, number>;
 
         // Complexity->O(N) 
         for(var i = 0; i < points.length; i++)
@@ -219,6 +176,7 @@ class Graph{
         for(var i = 0; i < edges.length; i++)
         {
             this.addToVertexGraph(edges[i].i, edges[i].j);
+            this.edgeIndexMap.set(symhash(edges[i].i, edges[i].j), i);
         }
         // Complexity->O((f1*N+f2*N...+fN*N)) = (0(N * (f1+f2+f3...))) ~(O(N^2)) 
         for(var i = 0; i < edges.length; i++)
@@ -229,8 +187,8 @@ class Graph{
 
                 var leftRightVerticesIndices:number[] = this.findLeftRightVertices(index_i, index_j);
                 var sortedEdgesToInsert:number[] = [];
-                var edgeLeftIndex = edgesMap.get(symhash(index_j, leftRightVerticesIndices[0]));
-                var edgeRightIndex = edgesMap.get(symhash(index_j, leftRightVerticesIndices[1]));
+                var edgeLeftIndex = this.edgeIndexMap.get(symhash(index_j, leftRightVerticesIndices[0]));
+                var edgeRightIndex = this.edgeIndexMap.get(symhash(index_j, leftRightVerticesIndices[1]));
 
                 //if edge continues then there will always be two indices to insert
                 if(edgeLeftIndex != undefined && edgeRightIndex != undefined)
@@ -325,7 +283,7 @@ class Graph{
                     if(nextLR == undefined)
                         break;
                     
-                    let edgeind = glEdgesMap.get(symhash(glEdges[nextLR[k]].i, glEdges[nextLR[k]].j));
+                    let edgeind = this.edgeIndexMap.get(symhash(glEdges[nextLR[k]].i, glEdges[nextLR[k]].j));
 
                     if(edgeind == undefined)
                         throw Error("Incorrect edge index!");
@@ -345,7 +303,7 @@ class Graph{
                 {
                     for(l = 0; l < loop.length-1; l++){
 
-                        let edgeind = glEdgesMap.get(symhash(loop[l], loop[l+1]));
+                        let edgeind = this.edgeIndexMap.get(symhash(loop[l], loop[l+1]));
                         
                         if(edgeind == undefined)
                             throw Error("Incorrect edge index!");
@@ -366,6 +324,32 @@ class Graph{
                 }
             }
         }
+    }
+
+    //function return indices of neighboring polygons in the glPolys array
+    calculateNeighborPolys = (poly: Polygon2d) : number[] => {
+        var neighborset:Set<number> = new Set();
+
+        // Complexity->O(N)
+        for(var i = 0; i < poly.length()-1; i++){
+            var j = poly.vertexIndexAt(i);
+            var k = poly.vertexIndexAt(i+1);
+            
+            let edgeInd = this.edgeIndexMap.get(symhash(j, k));
+
+            if(edgeInd == undefined)
+                throw Error("Incorrect edge index!");
+
+            var side1:number = glEdges[edgeInd].side1;
+            var side2:number = glEdges[edgeInd].side2;
+
+            if(side1>=0 && side1 != poly.id)
+                neighborset.add(side1);
+            if(side2>=0 && side2 != poly.id)
+                neighborset.add(side2);
+        }
+        return [...neighborset];
+
     }
 }
 

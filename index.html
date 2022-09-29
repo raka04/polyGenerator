@@ -28,7 +28,7 @@
     <div id="divInstructions">
         <h1>Instructions</h1>
         <p>1. Use clear data button to clear all the input from display and storage.<br>
-           2. Use load test data button to load the test example.<br>
+           2. Use load test data button to load a sample test data.<br>
            3. Use choose file button to load data from *.json file. Several input example files are also provided in the repository.
               Use add data button to load the data from the input file. <br>
            4. Alternatively, one may also use Add vertex and Add edge buttons to directly input the coordinates 
@@ -114,7 +114,6 @@
             glPoints.splice(0, glPoints.length);
             glEdges.splice(0, glEdges.length);
             glPolys = [];
-            glEdgesMap.clear();
 
             var myVTable = document.getElementById("vtable");
             var rowCount = myVTable.rows.length;
@@ -268,7 +267,7 @@
                 glEdges[i].initSides();
             }
             //create vertex graph
-            var vg = new Graph(glPoints, glEdges, glEdgesMap);
+            var vg = new Graph(glPoints, glEdges);
 
             //calculate polygons
             vg.calculatePolygons();
@@ -388,7 +387,7 @@
                 glEdges[i].initSides();
             }
             //create vertex graph
-            var vg = new Graph(glPoints, glEdges, glEdgesMap);
+            var vg = new Graph(glPoints, glEdges);
             
             //calculate polygons
             vg.calculatePolygons();
@@ -452,7 +451,7 @@
             var polyInd = Number(document.neighborPoly.polyIndex.value);
             if(polyInd < glPolys.length && !glPolys[polyInd].exterior){
 
-                var neighbors = glPolys[polyInd].calculateNeighborPolys();
+                var neighbors = vg.calculateNeighborPolys(glPolys[polyInd]);
 
                 for(const el of neighbors){
 
@@ -490,7 +489,7 @@
                 glEdges[i].initSides();
             }
             //create vertex graph
-            var vg = new Graph(glPoints, glEdges, glEdgesMap);
+            var vg = new Graph(glPoints, glEdges);
 
             //calculate polygons
             vg.calculatePolygons();
@@ -569,7 +568,6 @@
             document.getElementById("edtable").appendChild(tr);
             var e = new Edge(Number(index_i), Number(index_j));
             glEdges.push(e);
-            glEdgesMap.set(symhash(Number(index_i), Number(index_j)), glEdges.length-1);
         }
 
         function addVertex( x, y, srcData = true ){
